@@ -64,13 +64,11 @@ public class Main extends JavaPlugin implements Listener {
             }
         }
 
-        // 서버 시작 알림
         sendDiscordSafe(applyCommonPlaceholders(startupMsg, null, false));
     }
 
     @Override
     public void onDisable() {
-        // 서버 종료 알림
         sendDiscordSafe(applyCommonPlaceholders(shutdownMsg, null, false));
 
         if (jda != null) {
@@ -111,14 +109,12 @@ public class Main extends JavaPlugin implements Listener {
         }
 
         JDABuilder builder = JDABuilder.createDefault(token);
-        // 메시지 내용을 읽기 위해 MESSAGE_CONTENT 인텐트를 활성화
         builder.enableIntents(GatewayIntent.MESSAGE_CONTENT);
         builder.setActivity(Activity.playing("서버 채팅 연동"));
         builder.addEventListeners(new DiscordListener());
         jda = builder.build();
     }
 
-    // AsyncPlayerChatEvent -> Discord
     @EventHandler
     public void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();
@@ -132,7 +128,6 @@ public class Main extends JavaPlugin implements Listener {
         sendDiscordSafe(out);
     }
 
-    // PlayerJoin -> Discord
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         if (!joinEnabled) return;
@@ -144,7 +139,6 @@ public class Main extends JavaPlugin implements Listener {
         sendDiscordSafe(out);
     }
 
-    // PlayerQuit -> Discord
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         if (!quitEnabled) return;
@@ -189,7 +183,6 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    // Discord -> Minecraft
     private class DiscordListener extends ListenerAdapter {
         @Override
         public void onMessageReceived(MessageReceivedEvent event) {
@@ -229,7 +222,6 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    // Commands: /디스코드 [리로드|초대|인원], /접속
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase();
