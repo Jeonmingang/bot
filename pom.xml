@@ -13,7 +13,6 @@
     <jda.version>4.3.0_331</jda.version>
     <spigot.api>1.16.5-R0.1-SNAPSHOT</spigot.api>
   </properties>
-
   <repositories>
     <repository>
       <id>spigot-repo</id>
@@ -28,7 +27,6 @@
       <url>https://m2.dv8tion.net/releases</url>
     </repository>
   </repositories>
-
   <dependencies>
     <dependency>
       <groupId>org.spigotmc</groupId>
@@ -36,7 +34,6 @@
       <version>${spigot.api}</version>
       <scope>provided</scope>
     </dependency>
-
     <dependency>
       <groupId>net.dv8tion</groupId>
       <artifactId>JDA</artifactId>
@@ -49,7 +46,6 @@
       </exclusions>
     </dependency>
   </dependencies>
-
   <build>
     <plugins>
       <plugin>
