@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Server;
@@ -110,6 +111,8 @@ public class Main extends JavaPlugin implements Listener {
         }
 
         JDABuilder builder = JDABuilder.createDefault(token);
+        // 메시지 내용을 읽기 위해 MESSAGE_CONTENT 인텐트를 활성화
+        builder.enableIntents(GatewayIntent.MESSAGE_CONTENT);
         builder.setActivity(Activity.playing("서버 채팅 연동"));
         builder.addEventListeners(new DiscordListener());
         jda = builder.build();
@@ -149,7 +152,7 @@ public class Main extends JavaPlugin implements Listener {
         String out = quitFormat
                 .replace("%player%", p.getName())
                 .replace("%displayname%", p.getDisplayName());
-        out = applyCommonPlaceholders(out, null, true); // adjust for quitting
+        out = applyCommonPlaceholders(out, null, true);
         sendDiscordSafe(out);
     }
 
