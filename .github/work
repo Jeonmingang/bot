@@ -1,0 +1,40 @@
+name: Build DiscordBridge (Java 8 / Spigot 1.16.5)
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Show Java & Maven versions
+        run: |
+          java -version
+          mvn -v
+
+      - name: Build with Maven (shade)
+        run: mvn -B -e -DskipTests package
+
+      - name: Upload shaded jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: DiscordBridge-artifacts
+          path: |
+            target/*.jar
+            !target/original-*.jar
