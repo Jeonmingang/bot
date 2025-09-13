@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Server;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -18,7 +19,6 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import javax.security.auth.login.LoginException;
 import java.util.logging.Level;
@@ -28,6 +28,9 @@ public class Main extends JavaPlugin implements Listener {
     private JDA jda;
     private String guildId;
     private String channelId;
+    private String inviteUrl;
+    private String serverAddress;
+
     private String fmtMcToDc;
     private String fmtDcToMc;
     private String startupMsg;
@@ -40,14 +43,10 @@ public class Main extends JavaPlugin implements Listener {
     private boolean stripMentions;
     private boolean allowMcColorInbound;
 
-    private boolean activityEnabled;
-    private String activityFormat;
-    private int activityInterval;
-    private boolean postEnabled;
-    private String postFormat;
-    private int postInterval;
-    private BukkitTask activityTask;
-    private BukkitTask postTask;
+    // messages
+    private String msgConnectHeader;
+    private String msgConnectServer;
+    private String msgConnectDiscord;
 
     @Override
     public void onEnable() {
@@ -64,15 +63,14 @@ public class Main extends JavaPlugin implements Listener {
             }
         }
 
-        sendDiscordSafe(startupMsg.replace("%server%", Bukkit.getServer().getName()));
-        startSchedulers();
+        // 서버 시작 알림
+        sendDiscordSafe(applyCommonPlaceholders(startupMsg, null, false));
     }
 
     @Override
     public void onDisable() {
-        sendDiscordSafe(shutdownMsg.replace("%server%", Bukkit.getServer().getName()));
-
-        cancelSchedulers();
+        // 서버 종료 알림
+        sendDiscordSafe(applyCommonPlaceholders(shutdownMsg, null, false));
 
         if (jda != null) {
             jda.shutdownNow();
@@ -84,24 +82,24 @@ public class Main extends JavaPlugin implements Listener {
         FileConfiguration c = getConfig();
         guildId = c.getString("discord.guild-id", "");
         channelId = c.getString("discord.channel-id", "");
+        inviteUrl = c.getString("discord.invite-url", "https://discord.gg/");
+        serverAddress = c.getString("server.address", "play.example.com");
+
         fmtMcToDc = c.getString("format.minecraft-to-discord", "**<%player%>**: %message%");
         fmtDcToMc = c.getString("format.discord-to-minecraft", "&9[디스코드] &b%author%&7: &f%message%");
-        startupMsg = c.getString("events.startup-message", ":green_circle: 서버 열림: %server%");
-        shutdownMsg = c.getString("events.shutdown-message", ":red_circle: 서버 종료: %server%");
+        startupMsg = c.getString("events.startup-message", ":green_circle: 서버 열림 | 인원 %online%/%max%");
+        shutdownMsg = c.getString("events.shutdown-message", ":red_circle: 서버 종료 | 인원 %online%/%max%");
         joinEnabled = c.getBoolean("events.join-enabled", true);
         quitEnabled = c.getBoolean("events.quit-enabled", true);
-        joinFormat = c.getString("events.join-format", ":arrow_right: **%player%** 접속");
-        quitFormat = c.getString("events.quit-format", ":arrow_left: **%player%** 퇴장");
+        joinFormat = c.getString("events.join-format", ":arrow_right: **%player%** 접속 | 현재 %online%/%max%");
+        quitFormat = c.getString("events.quit-format", ":arrow_left: **%player%** 퇴장 | 현재 %online%/%max%");
         ignoreBots = c.getBoolean("options.ignore-discord-bots", true);
         stripMentions = c.getBoolean("options.strip-discord-mentions", true);
         allowMcColorInbound = c.getBoolean("options.allow-minecraft-color-inbound", false);
 
-        activityEnabled = c.getBoolean("online-status.activity-enabled", true);
-        activityFormat = c.getString("online-status.activity-format", "%online%명 접속 중 (%max%)");
-        activityInterval = c.getInt("online-status.activity-interval-seconds", 60);
-        postEnabled = c.getBoolean("online-status.post-enabled", false);
-        postFormat = c.getString("online-status.post-format", "현재 온라인: %online%/%max%");
-        postInterval = c.getInt("online-status.post-interval-seconds", 300);
+        msgConnectHeader = c.getString("messages.connect-header", "&a[접속 안내]");
+        msgConnectServer = c.getString("messages.connect-server", "&f서버 주소: &b%server_address%");
+        msgConnectDiscord = c.getString("messages.connect-discord", "&f디스코드: &b%invite_url%");
     }
 
     private void startJDA() throws LoginException {
@@ -117,51 +115,21 @@ public class Main extends JavaPlugin implements Listener {
         jda = builder.build();
     }
 
-    private void startSchedulers() {
-        cancelSchedulers();
-        if (activityEnabled) {
-            long ticks = Math.max(20L, activityInterval * 20L);
-            activityTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                if (jda == null) return;
-                String text = replaceStatusPlaceholders(activityFormat);
-                try {
-                    jda.getPresence().setActivity(Activity.playing(text));
-                } catch (Exception ignored) {}
-            }, 40L, ticks);
-        }
-        if (postEnabled) {
-            long ticks = Math.max(20L, postInterval * 20L);
-            postTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                String msg = replaceStatusPlaceholders(postFormat);
-                sendDiscordSafe(msg);
-            }, 200L, ticks);
-        }
-    }
-
-    private void cancelSchedulers() {
-        if (activityTask != null) { activityTask.cancel(); activityTask = null; }
-        if (postTask != null) { postTask.cancel(); postTask = null; }
-    }
-
-    private String replaceStatusPlaceholders(String in) {
-        int online = Bukkit.getOnlinePlayers().size();
-        int max = Bukkit.getMaxPlayers();
-        return in.replace("%online%", String.valueOf(online))
-                 .replace("%max%", String.valueOf(max))
-                 .replace("%server%", Bukkit.getServer().getName());
-    }
-
+    // AsyncPlayerChatEvent -> Discord
     @EventHandler
     public void onChat(AsyncPlayerChatEvent e) {
         Player p = e.getPlayer();
         String message = e.getMessage();
+
         String out = fmtMcToDc
                 .replace("%player%", p.getName())
                 .replace("%displayname%", p.getDisplayName())
                 .replace("%message%", message);
+
         sendDiscordSafe(out);
     }
 
+    // PlayerJoin -> Discord
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         if (!joinEnabled) return;
@@ -169,9 +137,11 @@ public class Main extends JavaPlugin implements Listener {
         String out = joinFormat
                 .replace("%player%", p.getName())
                 .replace("%displayname%", p.getDisplayName());
+        out = applyCommonPlaceholders(out, null, false);
         sendDiscordSafe(out);
     }
 
+    // PlayerQuit -> Discord
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         if (!quitEnabled) return;
@@ -179,74 +149,141 @@ public class Main extends JavaPlugin implements Listener {
         String out = quitFormat
                 .replace("%player%", p.getName())
                 .replace("%displayname%", p.getDisplayName());
+        out = applyCommonPlaceholders(out, null, true); // adjust for quitting
         sendDiscordSafe(out);
+    }
+
+    private String applyCommonPlaceholders(String content, Player context, boolean quitting) {
+        if (content == null) return null;
+        Server sv = getServer();
+        int online = sv.getOnlinePlayers().size();
+        if (quitting) online = Math.max(0, online - 1);
+        int max = sv.getMaxPlayers();
+
+        String out = content;
+        out = out.replace("%server%", sv.getName());
+        out = out.replace("%online%", String.valueOf(online));
+        out = out.replace("%max%", String.valueOf(max));
+        if (context != null) {
+            out = out.replace("%player%", context.getName());
+            out = out.replace("%displayname%", context.getDisplayName());
+        }
+        return out;
     }
 
     private void sendDiscordSafe(String content) {
         if (content == null || content.trim().isEmpty()) return;
         if (jda == null) return;
         if (channelId == null || channelId.isEmpty()) return;
+
         try {
             TextChannel ch = jda.getTextChannelById(channelId);
-            if (ch != null) ch.sendMessage(content).queue();
+            if (ch != null) {
+                ch.sendMessage(content).queue();
+            }
         } catch (Exception ex) {
             getLogger().log(Level.WARNING, "디스코드 전송 실패: " + ex.getMessage());
         }
     }
 
+    // Discord -> Minecraft
     private class DiscordListener extends ListenerAdapter {
         @Override
         public void onMessageReceived(MessageReceivedEvent event) {
             if (channelId == null || channelId.isEmpty()) return;
             if (event.getChannel() == null) return;
             if (!event.getChannel().getId().equals(channelId)) return;
-            if (ignoreBots && (event.getAuthor().isBot() || event.isWebhookMessage())) return;
+
+            if (ignoreBots && (event.getAuthor().isBot() || event.isWebhookMessage())) {
+                return;
+            }
 
             final String author = event.getAuthor().getName();
             String raw = event.getMessage().getContentDisplay();
+
             if (stripMentions) {
-                raw = raw.replace("@everyone", "(everyone)").replace("@here", "(here)");
+                raw = raw.replace("@everyone", "(everyone)")
+                         .replace("@here", "(here)");
             }
 
-            String formatted = fmtDcToMc.replace("%author%", author).replace("%message%", raw);
-            final String mcOut = allowMcColorInbound
-                    ? ChatColor.translateAlternateColorCodes('&', formatted)
-                    : ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', formatted));
+            String formatted = fmtDcToMc
+                    .replace("%author%", author)
+                    .replace("%message%", raw);
+
+            final String mcOut;
+            if (allowMcColorInbound) {
+                mcOut = ChatColor.translateAlternateColorCodes('&', formatted);
+            } else {
+                mcOut = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', formatted));
+            }
 
             Bukkit.getScheduler().runTask(Main.this, () -> {
-                for (Player pl : Bukkit.getOnlinePlayers()) pl.sendMessage(mcOut);
+                for (Player pl : Bukkit.getOnlinePlayers()) {
+                    pl.sendMessage(mcOut);
+                }
                 getServer().getConsoleSender().sendMessage(mcOut);
             });
         }
     }
 
+    // Commands: /디스코드 [리로드|초대|인원], /접속
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!command.getName().equalsIgnoreCase("디스코드")) return false;
-        boolean isAdmin = sender.hasPermission("discordbridge.admin");
-        if (!isAdmin) { sender.sendMessage(ChatColor.RED + "이 명령은 OP 전용입니다."); return true; }
+        String name = command.getName().toLowerCase();
 
-        if (args.length == 1 && args[0].equalsIgnoreCase("리로드")) {
-            reloadConfig();
-            loadConfigValues();
-            startSchedulers();
-            sender.sendMessage(ChatColor.GREEN + "DiscordBridge 설정을 리로드했습니다.");
-            if (jda != null) { jda.shutdownNow(); jda = null; }
-            if (getConfig().getBoolean("discord.enabled", true)) {
-                try { startJDA(); sender.sendMessage(ChatColor.GREEN + "디스코드 봇 재시작 완료."); }
-                catch (Exception e) { sender.sendMessage(ChatColor.RED + "디스코드 봇 시작 실패: " + e.getMessage()); }
+        if (name.equals("디스코드")) {
+            boolean isAdmin = sender.hasPermission("discordbridge.admin");
+            if (args.length == 0) {
+                sender.sendMessage(color("&e사용법: /디스코드 리로드 | /디스코드 초대 | /디스코드 인원"));
+                return true;
             }
+            if (args[0].equalsIgnoreCase("리로드")) {
+                if (!isAdmin) { sender.sendMessage(color("&c이 명령은 OP 전용입니다.")); return true; }
+                reloadConfig();
+                loadConfigValues();
+                sender.sendMessage(color("&a설정을 리로드했습니다."));
+
+                if (jda != null) { jda.shutdownNow(); jda = null; }
+                if (getConfig().getBoolean("discord.enabled", true)) {
+                    try {
+                        startJDA();
+                        sender.sendMessage(color("&a디스코드 봇 재시작 완료."));
+                    } catch (Exception e) {
+                        sender.sendMessage(color("&c디스코드 봇 시작 실패: " + e.getMessage()));
+                    }
+                }
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("초대")) {
+                if (!isAdmin) { sender.sendMessage(color("&c이 명령은 OP 전용입니다.")); return true; }
+                sender.sendMessage(color("&b디스코드 초대: &f") + inviteUrl);
+                return true;
+            }
+            if (args[0].equalsIgnoreCase("인원")) {
+                if (!isAdmin) { sender.sendMessage(color("&c이 명령은 OP 전용입니다.")); return true; }
+                String msg = ":busts_in_silhouette: 현재 인원 " +
+                        Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers();
+                sendDiscordSafe(msg);
+                sender.sendMessage(color("&a디스코드로 현재 인원을 전송했습니다."));
+                return true;
+            }
+            sender.sendMessage(color("&e사용법: /디스코드 리로드 | /디스코드 초대 | /디스코드 인원"));
             return true;
         }
 
-        if (args.length == 1 && args[0].equalsIgnoreCase("인원")) {
-            String msg = replaceStatusPlaceholders(postFormat);
-            sendDiscordSafe(msg);
-            sender.sendMessage(ChatColor.AQUA + "현재 인원 정보를 디스코드에 전송했습니다.");
+        if (name.equals("접속")) {
+            sender.sendMessage(color(msgConnectHeader));
+            sender.sendMessage(color(msgConnectServer
+                    .replace("%server_address%", serverAddress)));
+            sender.sendMessage(color(msgConnectDiscord
+                    .replace("%invite_url%", inviteUrl)));
             return true;
         }
 
-        sender.sendMessage(ChatColor.YELLOW + "사용법: /디스코드 리로드 | /디스코드 인원");
-        return true;
+        return false;
+    }
+
+    private String color(String s) {
+        return ChatColor.translateAlternateColorCodes('&', s);
     }
 }

@@ -1,31 +1,27 @@
-# DiscordBridge v1.2.0
+# DiscordBridge v1.3.0
 discord:
   enabled: true
   token: "여기에_디스코드_봇_토큰"
   guild-id: "여기에_길드ID"
   channel-id: "여기에_채널ID"
-
+  invite-url: "https://discord.gg/여기에_초대코드"
+server:
+  address: "play.example.com"
 format:
   minecraft-to-discord: "**<%player%>**: %message%"
   discord-to-minecraft: "&9[디스코드] &b%author%&7: &f%message%"
-
 events:
-  startup-message: ":green_circle: 서버 열림: %server%"
-  shutdown-message: ":red_circle: 서버 종료: %server%"
+  startup-message: ":green_circle: 서버 열림 | 인원 %online%/%max%"
+  shutdown-message: ":red_circle: 서버 종료 | 인원 %online%/%max%"
   join-enabled: true
   quit-enabled: true
-  join-format: ":arrow_right: **%player%** 접속"
-  quit-format: ":arrow_left: **%player%** 퇴장"
-
+  join-format: ":arrow_right: **%player%** 접속 | 현재 %online%/%max%"
+  quit-format: ":arrow_left: **%player%** 퇴장 | 현재 %online%/%max%"
+messages:
+  connect-header: "&a[접속 안내]"
+  connect-server: "&f서버 주소: &b%server_address%"
+  connect-discord: "&f디스코드: &b%invite_url%"
 options:
   ignore-discord-bots: true
   strip-discord-mentions: true
   allow-minecraft-color-inbound: false
-
-online-status:
-  activity-enabled: true
-  activity-format: "%online%명 접속 중 (%max%)"
-  activity-interval-seconds: 60
-  post-enabled: false
-  post-format: "현재 온라인: %online%/%max%"
-  post-interval-seconds: 300
