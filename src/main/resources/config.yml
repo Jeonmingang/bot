@@ -1,0 +1,39 @@
+# DiscordBridge v1.4.1
+discord:
+  enabled: true
+  token: "여기에_디스코드_봇_토큰"
+  guild-id: "여기에_길드ID"
+  channel-id: "여기에_채널ID"
+  invite-url: "https://discord.gg/여기에_초대코드"
+server:
+  address: "play.example.com"
+format:
+  minecraft-to-discord: "**<%player%>**: %message%"
+  discord-to-minecraft: "&9[디스코드] &b%author%&7: &f%message%"
+events:
+  startup-message: ":green_circle: 서버 열림 | 인원 %online%/%max%"
+  shutdown-message: ":red_circle: 서버 종료 | 인원 %online%/%max%"
+  join-enabled: true
+  quit-enabled: true
+  join-format: ":arrow_right: **%player%** 접속 | 현재 %online%/%max%"
+  quit-format: ":arrow_left: **%player%** 퇴장 | 현재 %online%/%max%"
+
+pixelmon:
+  legendary-broadcast-detection:
+    enabled: true
+    use-file-tail: true
+    channel-id: "" # 비워두면 위의 discord.channel-id 사용
+    discord-format: ":sparkles: 전설 스폰 감지! %raw%"
+    patterns:
+      - "(?i)A Legendary has spawned"
+      - "(?i)전설.?포켓몬.*스폰"
+      - "(?i)전설.*등장"
+
+messages:
+  connect-header: "&a[접속 안내]"
+  connect-server: "&f서버 주소: &b%server_address%"
+  connect-discord: "&f디스코드: &b%invite_url%"
+options:
+  ignore-discord-bots: true
+  strip-discord-mentions: true
+  allow-minecraft-color-inbound: false
