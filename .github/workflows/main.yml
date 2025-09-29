@@ -1,76 +1,33 @@
-name: build
+name: Build (Java 11)
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch: {}
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      # ---- JDK 8: v4 사용, 실패하면 v3로 폴백 ----
-      - name: Setup Temurin JDK 8 (primary v4)
-        id: setup_java_v4
+      - name: Set up JDK 11 (Temurin)
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "8"
-          cache: maven
-        continue-on-error: true
-
-      - name: Setup Temurin JDK 8 (fallback v3)
-        if: steps.setup_java_v4.outcome != 'success'
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: "8"
+          java-version: '11'
           cache: maven
 
-      # ---- Maven 빌드: 최대 3회 재시도 ----
-      - name: Build with Maven (retry up to 3x)
-        shell: bash
-        env:
-          MAVEN_OPTS: "-Xmx1g -Djava.awt.headless=true"
+      - name: Verify toolchain
         run: |
-          set -e
-          for i in 1 2 3; do
-            echo "Attempt $i/3 ..."
-            mvn -B -U -DskipTests package && break || true
-            if [ $i -lt 3 ]; then
-              echo "Retrying in 15s..."
-              sleep 15
-            else
-              echo "Build failed after 3 attempts."
-              exit 1
-            fi
-          done
+          java -version
+          mvn -version
 
-      # ---- 진단: 타겟 디렉터리 목록 ----
-      - name: Show target directory
-        if: always()
-        run: |
-          echo "=== pwd ==="
-          pwd
-          echo "=== ls -al target ==="
-          ls -al target || true
+      - name: Build
+        run: mvn -U -B -DskipTests clean package
 
-      # ---- 아티팩트 업로드 ----
-      - name: Upload shaded jar
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: DiscordBridge-jar
-          path: |
-            target/*-shaded.jar
-            target/*.jar
+          name: build-artifacts
+          path: target/*.jar
           if-no-files-found: error
-          retention-days: 7
