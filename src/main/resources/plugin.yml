@@ -1,0 +1,16 @@
+name: DiscordBridge
+main: com.minkang.discordbridge.Main
+version: 1.4.4
+api-version: 1.16
+author: MinGang
+commands:
+  디스코드:
+    description: 디스코드 브릿지 명령어
+    usage: /디스코드 리로드 | /디스코드 초대 | /디스코드 인원 | /디스코드 테스트레전드
+  접속:
+    description: 서버/디스코드 접속 정보 보기 (무권한)
+    usage: /접속
+permissions:
+  discordbridge.admin:
+    description: 디스코드 브릿지 관리 권한
+    default: op
