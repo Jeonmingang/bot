@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.minkang.discordbridge</groupId>
   <artifactId>DiscordBridge</artifactId>
-  <version>1.4.5</version>
+  <version>1.4.4</version>
   <name>DiscordBridge</name>
   <properties>
     <maven.compiler.source>11</maven.compiler.source>

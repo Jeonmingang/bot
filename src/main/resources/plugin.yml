@@ -1,17 +1,20 @@
-name: UltimateVotePlus
-main: com.minkang.ultimate.voteplus.Main
-version: 1.4.5
-api-version: 1.16
-author: MinGang
+name: DiscordBridge
+main: com.minkang.discordbridge.Main
+version: 1.4.4
+api-version: "1.16"
+authors: ["MinKang"]
+description: "Discord ↔ Minecraft chat bridge (JDA5) with Pixelmon log hooks."
 commands:
-  자동공지:
-    description: 자동 공지 관리
-    usage: /자동공지 [켜기|끄기|다음|강제|리로드]
-    permission: ultimatevoteplus.admin
-  추천:
-    description: 추천 링크 안내 및 관리
-    usage: /추천
+  디스코드:
+    description: 디스코드 브릿지 관리
+    usage: "/디스코드 리로드 | /디스코드 초대 | /디스코드 인원 | /디스코드 테스트레전드"
+    permission: discordbridge.admin
+    aliases: [discord, dbridge]
+  접속:
+    description: 서버/디스코드 접속 정보 보기 (무권한)
+    usage: "/접속"
+    aliases: [connect]
 permissions:
-  ultimatevoteplus.admin:
-    description: VotePlus 관리 권한
+  discordbridge.admin:
+    description: 디스코드 브릿지 관리 권한
     default: op
