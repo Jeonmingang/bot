@@ -34,7 +34,18 @@
         <exclusion><groupId>club.minnced</groupId><artifactId>opus-java</artifactId></exclusion>
       </exclusions>
     </dependency>
-  </dependencies>
+  
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>2.0.13</version>
+  </dependency>
+  <dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-simple</artifactId>
+    <version>2.0.13</version>
+  </dependency>
+</dependencies>
   <build>
     <plugins>
       <plugin>
@@ -58,8 +69,17 @@
                 <relocation><pattern>org.apache.commons</pattern><shadedPattern>com.minkang.libs.org.apache.commons</shadedPattern></relocation>
                 <relocation><pattern>org.json</pattern><shadedPattern>com.minkang.libs.org.json</shadedPattern></relocation>
                 <relocation><pattern>com.neovisionaries</pattern><shadedPattern>com.minkang.libs.com.neovisionaries</shadedPattern></relocation>
-              </relocations>
-              <minimizeJar>true</minimizeJar>
+              
+  <relocation>
+    <pattern>org.slf4j</pattern>
+    <shadedPattern>com.minkang.libs.slf4j</shadedPattern>
+  </relocation>
+</relocations>
+              
+<minimizeJar>true</minimizeJar>
+<transformers>
+  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+</transformers>
             </configuration>
           </execution>
         </executions>
