@@ -35,3 +35,6 @@ options:
   ignore-discord-bots: true
   strip-discord-mentions: true
   allow-minecraft-color-inbound: false
+
+bridge:
+  block-empty-recipients: true  # 섬채팅 등 비공개 채널은 디스코드로 미전송

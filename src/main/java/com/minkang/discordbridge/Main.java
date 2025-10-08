@@ -17,6 +17,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -359,10 +360,15 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     // AsyncPlayerChatEvent -> Discord
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
-        Player p = e.getPlayer();
+                Player p = e.getPlayer();
         String message = e.getMessage();
+
+// Guard: if recipients are empty (e.g., private channels / island chat), or message is blank, skip
+if (e.getRecipients() == null || e.getRecipients().isEmpty()) return;
+if (message == null || ChatColor.stripColor(message).trim().isEmpty()) return;
+
 
         String out = fmtMcToDc
                 .replace("%player%", p.getName())
