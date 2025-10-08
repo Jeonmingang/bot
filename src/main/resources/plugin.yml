@@ -1,6 +1,6 @@
 name: DiscordBridge
 main: com.minkang.discordbridge.Main
-version: 1.4.6
+version: 1.4.7
 api-version: "1.16"
 authors: ["MinKang"]
 description: "Discord ↔ Minecraft chat bridge (JDA5) with Pixelmon log hooks."
